@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de funciones lineales</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef1f5;
+      --panel: #ffffff;
+      --panel-strong: #f2f5fb;
+      --text: #1d2939;
+      --muted: #5b6d82;
+      --border: #d3dae3;
+      --accent: #0f6fff;
+      --accent-soft: rgba(15, 111, 255, 0.12);
+      --danger: #d43f3a;
+      --success: #1b7a45;
+      --shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #111827;
+      --panel: #1f2937;
+      --panel-strong: #111827;
+      --text: #f9fafb;
+      --muted: #cbd5e1;
+      --border: #334155;
+      --accent: #60a5fa;
+      --accent-soft: rgba(96, 165, 250, 0.16);
+      --danger: #fca5a5;
+      --success: #86efac;
+      --shadow: none;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, rgba(15,111,255,.14), transparent 25%), var(--bg);
+      color: var(--text);
+    }
+    body {
+      padding: 18px;
+    }
+    .app {
+      max-width: 1440px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2.4vw, 2.2rem);
+      letter-spacing: -0.03em;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 0.8rem 1rem;
+      cursor: pointer;
+      background: var(--panel);
+      color: var(--text);
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+      box-shadow: var(--shadow);
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+    }
+    .btn.secondary {
+      background: var(--panel-strong);
+    }
+    .btn.small {
+      padding: 0.6rem 0.8rem;
+      font-size: 0.92rem;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr;
+      gap: 20px;
+    }
+    .card {
+      margin-bottom: 18px;
+      border-radius: 18px;
+      background: var(--panel-strong);
+      border: 1px solid var(--border);
+      padding: 18px;
+    }
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 0.85rem;
+      font-size: 1.1rem;
+    }
+    .field {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 0.93rem;
+      color: var(--muted);
+    }
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 0.9rem 1rem;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+      font-family: inherit;
+    }
+    .compact {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .compact.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .result-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+    }
+    .result-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+    .result-card strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+    .result-card span {
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    details {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: var(--bg);
+      margin-top: 10px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .note {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    .output-line {
+      background: rgba(15,111,255,0.05);
+      border: 1px dashed var(--accent);
+      padding: 14px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      overflow-wrap: anywhere;
+    }
+    .graph-panel {
+      position: relative;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .graph-area {
+      position: relative;
+      flex: 1;
+      min-height: 420px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.02));
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      display: block;
+    }
+    .graph-footer {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .legend .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot.blue { background: #0f6fff; }
+    .dot.orange { background: #f59e0b; }
+    .dot.green { background: #14b8a6; }
+    .history-list {
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+    .history-item {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+    }
+    .history-item:last-child { border-bottom: 0; }
+    .history-item time {
+      display: block;
+      color: var(--muted);
+      font-size: 0.84rem;
+      margin-bottom: 6px;
+    }
+    .hint {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--danger);
+      margin-top: 8px;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .graph-panel { min-height: 360px; }
+    }
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .controls { width: 100%; justify-content: stretch; }
+      .btn { width: 100%; justify-content: center; }
+      .compact { grid-template-columns: 1fr; }
+      .compact.three { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <div class="app">
+    <div class="topbar">
+      <div>
+        <h1 data-text="title">Calculadora de funciones lineales</h1>
+        <p class="note" data-text="subtitle">Analiza, grafica y aprende cómo obtener pendiente e intercepto.</p>
+      </div>
+      <div class="controls">
+        <button class="btn secondary small" id="langToggle">Español / English</button>
+        <button class="btn secondary small" id="themeToggle">Modo oscuro</button>
+      </div>
+    </div>
+    <div class="grid">
+      <section class="panel">
+        <div class="card">
+          <h2 data-text="cardEquationTitle">Entrada de ecuación</h2>
+          <div class="field">
+            <label for="equationInput" data-text="equationLabel">Ecuación</label>
+            <textarea id="equationInput" placeholder="y = 2x + 1  o  3x + 2y - 4 = 0"></textarea>
+          </div>
+          <div class="controls">
+            <button class="btn primary" id="parseEquationBtn" data-text="parseBtn">Calcular</button>
+            <button class="btn secondary" id="clearEquationBtn" data-text="clearBtn">Limpiar</button>
+          </div>
+          <p class="note" data-text="inputHint">Acepta formatos: y = mx + b, ax + by + c = 0, 2x + 3y = 6.</p>
+        </div>
+        <div class="card">
+          <h2 data-text="cardPointsTitle">Construir con dos puntos</h2>
+          <div class="compact three">
+            <div class="field">
+              <label for="x1Input" data-text="x1Label">x₁</label>
+              <input type="number" id="x1Input" value="-2" />
+            </div>
+            <div class="field">
+              <label for="y1Input" data-text="y1Label">y₁</label>
+              <input type="number" id="y1Input" value="-2" />
+            </div>
+            <div class="field">
+              <label for="x2Input" data-text="x2Label">x₂</label>
+              <input type="number" id="x2Input" value="2" />
+            </div>
+            <div class="field">
+              <label for="y2Input" data-text="y2Label">y₂</label>
+              <input type="number" id="y2Input" value="2" />
+            </div>
+          </div>
+          <div class="controls">
+            <button class="btn primary" id="updatePointsBtn" data-text="pointsBtn">Generar recta</button>
+            <button class="btn secondary" id="randomPointsBtn" data-text="randomBtn">Punto aleatorio</button>
+          </div>
+          <p class="note" data-text="dragHint">Arrastra los puntos en la gráfica para actualizar la ecuación.</p>
+        </div>
+        <div class="card">
+          <h2 data-text="cardCompareTitle">Comparador de rectas</h2>
+          <div class="field">
+            <label for="equation2Input" data-text="equation2Label">Segunda recta</label>
+            <textarea id="equation2Input" placeholder="y = -x + 3"></textarea>
+          </div>
+          <div class="controls">
+            <button class="btn primary" id="compareBtn" data-text="compareBtn">Comparar</button>
+            <button class="btn secondary" id="clearCompareBtn" data-text="clearCompareBtn">Borrar</button>
+          </div>
+          <p class="note" data-text="compareHint">Compara dos rectas y encuentra su intersección.</p>
+        </div>
+        <div class="card">
+          <h2 data-text="cardHistoryTitle">Historial</h2>
+          <div class="history-list" id="historyList"></div>
+          <div class="controls">
+            <button class="btn secondary" id="clearHistoryBtn" data-text="clearHistoryBtn">Limpiar historial</button>
+          </div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="graph-panel">
+          <div class="graph-area">
+            <canvas id="graphCanvas"></canvas>
+          </div>
+          <div class="graph-footer">
+            <div class="legend">
+              <span><span class="dot blue"></span><span data-text="legendLine1">Recta activa</span></span>
+              <span><span class="dot orange"></span><span data-text="legendLine2">Recta comparada</span></span>
+              <span><span class="dot green"></span><span data-text="legendPoints">Puntos móviles</span></span>
+            </div>
+            <div class="controls">
+              <button class="btn secondary small" id="resetViewBtn" data-text="resetViewBtn">Reset</button>
+              <button class="btn secondary small" id="exportImageBtn" data-text="exportBtn">Exportar imagen</button>
+              <button class="btn secondary small" id="printBtn" data-text="printBtn">Imprimir</button>
+            </div>
+          </div>
+        </div>
+        <div class="result-grid">
+          <div class="result-card">
+            <strong data-text="resultEquation">Ecuación actual</strong>
+            <span id="currentEquation">y = x</span>
+          </div>
+          <div class="result-card">
+            <strong data-text="resultSlope">Pendiente</strong>
+            <span id="slopeResult">1</span>
+          </div>
+          <div class="result-card">
+            <strong data-text="resultIntercept">Intercepto Y</strong>
+            <span id="interceptResult">0</span>
+          </div>
+          <div class="result-card">
+            <strong data-text="resultType">Tipo de función</strong>
+            <span id="functionType">Creciente</span>
+          </div>
+          <div class="result-card">
+            <strong data-text="resultXint">Intersección con eje X</strong>
+            <span id="xInterceptResult">x = 0</span>
+          </div>
+          <div class="result-card">
+            <strong data-text="resultExtra">Interpretación</strong>
+            <span id="simpleInterpretation">La recta sube de izquierda a derecha.</span>
+          </div>
+        </div>
+        <div class="card">
+          <h2 data-text="cardStepsTitle">Explicaciones</h2>
+          <details open>
+            <summary data-text="stepSlopeTitle">Cómo se obtiene la pendiente</summary>
+            <p id="slopeSteps">La pendiente es la razón de variación entre x y y...</p>
+          </details>
+          <details>
+            <summary data-text="stepInterceptTitle">Cómo se calcula el intercepto</summary>
+            <p id="interceptSteps">El intercepto Y es el valor de y cuando x = 0...</p>
+          </details>
+          <details>
+            <summary data-text="stepSubstituteTitle">Sustituciones explicadas</summary>
+            <p id="substitutionSteps">Cuando conoces dos puntos, reemplazas en la ecuación y resuelves...</p>
+          </details>
+          <details>
+            <summary data-text="stepExerciseTitle">Ejercicio aleatorio</summary>
+            <p id="exercisePrompt">Presiona «Ejercicio aleatorio» para obtener una pregunta de práctica.</p>
+            <button class="btn secondary" id="showSolutionBtn" data-text="showSolutionBtn">Ver solución</button>
+            <p id="exerciseSolution" class="note"></p>
+          </details>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script>
+    const textData = {
+      es: {
+        title: "Calculadora de funciones lineales",
+        subtitle: "Analiza, grafica y aprende cómo obtener pendiente e intercepto.",
+        cardEquationTitle: "Entrada de ecuación",
+        equationLabel: "Ecuación",
+        parseBtn: "Calcular",
+        clearBtn: "Limpiar",
+        inputHint: "Acepta formatos: y = mx + b, ax + by + c = 0, 2x + 3y = 6.",
+        cardPointsTitle: "Construir con dos puntos",
+        x1Label: "x₁",
+        y1Label: "y₁",
+        x2Label: "x₂",
+        y2Label: "y₂",
+        pointsBtn: "Generar recta",
+        randomBtn: "Punto aleatorio",
+        dragHint: "Arrastra los puntos en la gráfica para actualizar la ecuación.",
+        cardCompareTitle: "Comparador de rectas",
+        equation2Label: "Segunda recta",
+        compareBtn: "Comparar",
+        clearCompareBtn: "Borrar",
+        compareHint: "Compara dos rectas y encuentra su intersección.",
+        cardHistoryTitle: "Historial",
+        clearHistoryBtn: "Limpiar historial",
+        legendLine1: "Recta activa",
+        legendLine2: "Recta comparada",
+        legendPoints: "Puntos móviles",
+        resetViewBtn: "Reset",
+        exportBtn: "Exportar imagen",
+        printBtn: "Imprimir",
+        resultEquation: "Ecuación actual",
+        resultSlope: "Pendiente",
+        resultIntercept: "Intercepto Y",
+        resultType: "Tipo de función",
+        resultXint: "Intersección con eje X",
+        resultExtra: "Interpretación",
+        cardStepsTitle: "Explicaciones",
+        stepSlopeTitle: "Cómo se obtiene la pendiente",
+        stepInterceptTitle: "Cómo se calcula el intercepto",
+        stepSubstituteTitle: "Sustituciones explicadas",
+        stepExerciseTitle: "Ejercicio aleatorio",
+        showSolutionBtn: "Ver solución",
+        dialogNoEquation: "Por favor ingresa una ecuación válida.",
+        dialogBadFormat: "Formato inválido. Revisa símbolos y variables.",
+        dialogNoPoints: "Ingresa dos puntos distintos.",
+        dialogNoCompare: "Ingresa la segunda ecuación para comparar.",
+        buttonSaveHistory: "Guardar en historial",
+        themeDark: "Modo oscuro",
+        themeLight: "Modo claro",
+        langLabel: "Español / English",
+        exportSuccess: "Lista para descargar la imagen.",
+        pointA: "Punto A",
+        pointB: "Punto B",
+        exerciseExample1: "Encuentra la ecuación de la recta que pasa por dos puntos.",
+        exerciseExample2: "Encuentra la pendiente dado un gráfico.",
+        exerciseExample3: "Encuentra la intersección entre dos rectas.",
+        ifVertical: "La recta es vertical; la pendiente no está definida.",
+        ifHorizontal: "La recta es constante; la pendiente es cero.",
+        lineIncreasing: "Creciente: sube de izquierda a derecha.",
+        lineDecreasing: "Decreciente: baja de izquierda a derecha.",
+        lineConstant: "Constante: la función es horizontal.",
+        linePositive: "Pendiente positiva.",
+        lineNegative: "Pendiente negativa.",
+        lineZero: "Pendiente cero.",
+        lineParallel: "Las rectas son paralelas o coinciden.",
+        lineIntersect: "Se intersectan en:",
+        invalidPoint: "El punto A y B no pueden ser iguales.",
+        pointMoved: "Punto movido en la gráfica.",
+        historyEmpty: "Aquí se guardan los últimos cálculos.",
+      },
+      en: {
+        title: "Linear Function Calculator",
+        subtitle: "Analyze, graph and learn how to find slope and intercept.",
+        cardEquationTitle: "Equation input",
+        equationLabel: "Equation",
+        parseBtn: "Calculate",
+        clearBtn: "Clear",
+        inputHint: "Accepts: y = mx + b, ax + by + c = 0, 2x + 3y = 6.",
+        cardPointsTitle: "Build from two points",
+        x1Label: "x₁",
+        y1Label: "y₁",
+        x2Label: "x₂",
+        y2Label: "y₂",
+        pointsBtn: "Generate line",
+        randomBtn: "Random points",
+        dragHint: "Drag points on the graph to update the equation.",
+        cardCompareTitle: "Line comparator",
+        equation2Label: "Second line",
+        compareBtn: "Compare",
+        clearCompareBtn: "Clear",
+        compareHint: "Compare two lines and find their intersection.",
+        cardHistoryTitle: "History",
+        clearHistoryBtn: "Clear history",
+        legendLine1: "Active line",
+        legendLine2: "Compared line",
+        legendPoints: "Movable points",
+        resetViewBtn: "Reset",
+        exportBtn: "Export image",
+        printBtn: "Print",
+        resultEquation: "Current equation",
+        resultSlope: "Slope",
+        resultIntercept: "Y-intercept",
+        resultType: "Function type",
+        resultXint: "X-intercept",
+        resultExtra: "Interpretation",
+        cardStepsTitle: "Explanations",
+        stepSlopeTitle: "How to get the slope",
+        stepInterceptTitle: "How to calculate the intercept",
+        stepSubstituteTitle: "Substitutions explained",
+        stepExerciseTitle: "Random exercise",
+        showSolutionBtn: "Show solution",
+        dialogNoEquation: "Enter a valid equation.",
+        dialogBadFormat: "Invalid format. Check symbols and variables.",
+        dialogNoPoints: "Enter two distinct points.",
+        dialogNoCompare: "Enter the second equation to compare.",
+        buttonSaveHistory: "Save to history",
+        themeDark: "Dark mode",
+        themeLight: "Light mode",
+        langLabel: "Español / English",
+        exportSuccess: "Image ready to download.",
+        pointA: "Point A",
+        pointB: "Point B",
+        exerciseExample1: "Find the equation of the line through two points.",
+        exerciseExample2: "Find the slope from a graph.",
+        exerciseExample3: "Find the intersection of two lines.",
+        ifVertical: "The line is vertical; slope is undefined.",
+        ifHorizontal: "The line is constant; slope is zero.",
+        lineIncreasing: "Increasing: rises left to right.",
+        lineDecreasing: "Decreasing: falls left to right.",
+        lineConstant: "Constant: horizontal function.",
+        linePositive: "Positive slope.",
+        lineNegative: "Negative slope.",
+        lineZero: "Zero slope.",
+        lineParallel: "Lines are parallel or coincide.",
+        lineIntersect: "They intersect at:",
+        invalidPoint: "Point A and B cannot match.",
+        pointMoved: "Point moved on the graph.",
+        historyEmpty: "Recent calculations will appear here.",
+      }
+    };
+
+    const state = {
+      lang: 'es',
+      theme: 'light',
+      line1: {
+        label: 'L1',
+        valid: false,
+        slope: 1,
+        intercept: 0,
+        a: -1,
+        bcoef: 1,
+        c: 0,
+        xIntercept: 0,
+        yIntercept: 0,
+        behavior: 'increasing',
+        interpretation: '',
+        equation: 'y = x',
+        form: 'slopeIntercept',
+        points: [{ x: -2, y: -2 }, { x: 2, y: 2 }],
+        source: 'points',
+      },
+      line2: {
+        label: 'L2',
+        valid: false,
+        slope: -1,
+        intercept: 3,
+        a: 1,
+        bcoef: 1,
+        c: -3,
+        xIntercept: 3,
+        yIntercept: 3,
+        equation: 'y = -x + 3',
+        comparison: '',
+      },
+      history: [],
+      randomTask: null,
+      canvas: null,
+      ctx: null,
+      graph: {
+        scale: 40,
+        offsetX: null,
+        offsetY: null,
+        draggingPoint: null,
+        draggingLine: null,
+        lastMouse: null,
+        isPanning: false,
+      },
+      compareActive: false,
+      animateToken: 0,
+    };
+
+    const elements = {
+      equationInput: document.getElementById('equationInput'),
+      parseEquationBtn: document.getElementById('parseEquationBtn'),
+      clearEquationBtn: document.getElementById('clearEquationBtn'),
+      x1Input: document.getElementById('x1Input'),
+      y1Input: document.getElementById('y1Input'),
+      x2Input: document.getElementById('x2Input'),
+      y2Input: document.getElementById('y2Input'),
+      updatePointsBtn: document.getElementById('updatePointsBtn'),
+      randomPointsBtn: document.getElementById('randomPointsBtn'),
+      equation2Input: document.getElementById('equation2Input'),
+      compareBtn: document.getElementById('compareBtn'),
+      clearCompareBtn: document.getElementById('clearCompareBtn'),
+      clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+      historyList: document.getElementById('historyList'),
+      currentEquation: document.getElementById('currentEquation'),
+      slopeResult: document.getElementById('slopeResult'),
+      interceptResult: document.getElementById('interceptResult'),
+      xInterceptResult: document.getElementById('xInterceptResult'),
+      functionType: document.getElementById('functionType'),
+      simpleInterpretation: document.getElementById('simpleInterpretation'),
+      slopeSteps: document.getElementById('slopeSteps'),
+      interceptSteps: document.getElementById('interceptSteps'),
+      substitutionSteps: document.getElementById('substitutionSteps'),
+      exercisePrompt: document.getElementById('exercisePrompt'),
+      showSolutionBtn: document.getElementById('showSolutionBtn'),
+      exerciseSolution: document.getElementById('exerciseSolution'),
+      langToggle: document.getElementById('langToggle'),
+      themeToggle: document.getElementById('themeToggle'),
+      resetViewBtn: document.getElementById('resetViewBtn'),
+      exportImageBtn: document.getElementById('exportImageBtn'),
+      printBtn: document.getElementById('printBtn'),
+      graphCanvas: document.getElementById('graphCanvas'),
+      body: document.body,
+    };
+
+    function text(key) {
+      return textData[state.lang][key] || textData.es[key] || key;
+    }
+
+    function setLanguage(lang) {
+      state.lang = lang;
+      document.querySelectorAll('[data-text]').forEach(el => {
+        const key = el.getAttribute('data-text');
+        el.textContent = text(key);
+      });
+      elements.langToggle.textContent = text('langLabel');
+      elements.themeToggle.textContent = state.theme === 'dark' ? text('themeLight') : text('themeDark');
+      updateResultCards();
+      renderExercise();
+    }
+
+    function toggleLanguage() {
+      setLanguage(state.lang === 'es' ? 'en' : 'es');
+    }
+
+    function setTheme(theme) {
+      state.theme = theme;
+      document.body.setAttribute('data-theme', theme);
+      elements.themeToggle.textContent = theme === 'dark' ? text('themeLight') : text('themeDark');
+    }
+
+    function toggleTheme() {
+      setTheme(state.theme === 'dark' ? 'light' : 'dark');
+    }
+
+    function formatNumber(value) {
+      if (Number.isFinite(value)) {
+        const rounded = Math.abs(value) < 0.0001 ? 0 : Math.round(value * 10000) / 10000;
+        return rounded.toString();
+      }
+      return value;
+    }
+
+    function safeNumber(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function normalizeEquationInput(input) {
+      return input.replace(/\s+/g, '').replace(/,/g, '.').toLowerCase();
+    }
+
+    function parseExpression(expr) {
+      const tokens = expr.match(/[+-]?[^+-]+/g) || [];
+      const result = { x: 0, y: 0, c: 0 };
+      for (const token of tokens) {
+        if (!token) continue;
+        if (/^[+-]?$/.test(token)) continue;
+        if (token.includes('x') && token.includes('y')) {
+          throw new Error(text('dialogBadFormat'));
+        }
+        if (token.includes('x')) {
+          const value = token.replace('x', '');
+          result.x += parseTerm(value);
+        } else if (token.includes('y')) {
+          const value = token.replace('y', '');
+          result.y += parseTerm(value);
+        } else {
+          result.c += parseTerm(token);
+        }
+      }
+      return result;
+    }
+
+    function parseTerm(token) {
+      if (token === '+' || token === '') return 1;
+      if (token === '-') return -1;
+      const value = parseFloat(token);
+      if (Number.isNaN(value)) {
+        throw new Error(text('dialogBadFormat'));
+      }
+      return value;
+    }
+
+    function parseEquation(rawInput) {
+      const raw = normalizeEquationInput(rawInput);
+      if (!raw) {
+        throw new Error(text('dialogNoEquation'));
+      }
+      if (/[^0-9x+y\-*=.]/.test(raw)) {
+        throw new Error(text('dialogBadFormat'));
+      }
+      const parts = raw.split('=');
+      if (parts.length > 2) {
+        throw new Error(text('dialogBadFormat'));
+      }
+      let [left, right] = parts;
+      if (right === undefined) {
+        right = '0';
+      }
+      const leftExp = parseExpression(left);
+      const rightExp = parseExpression(right);
+      const a = leftExp.x - rightExp.x;
+      const bcoef = leftExp.y - rightExp.y;
+      const c = leftExp.c - rightExp.c;
+      if (a === 0 && bcoef === 0) {
+        throw new Error(text('dialogBadFormat'));
+      }
+      const slope = bcoef === 0 ? null : -a / bcoef;
+      const intercept = bcoef === 0 ? null : -c / bcoef;
+      const xIntercept = a === 0 ? null : -c / a;
+      const yIntercept = bcoef === 0 ? null : -c / bcoef;
+      const equationText = buildEquationText(a, bcoef, c);
+      return {
+        a,
+        bcoef,
+        c,
+        slope,
+        intercept,
+        xIntercept,
+        yIntercept,
+        equationText,
+      };
+    }
+
+    function buildEquationText(a, bcoef, c) {
+      if (bcoef === 0) {
+        return `x = ${formatNumber(-c / a)}`;
+      }
+      const slope = -a / bcoef;
+      const intercept = -c / bcoef;
+      let textValue = 'y = ';
+      if (slope === 0) {
+        textValue += formatNumber(intercept);
+      } else {
+        const slopeText = slope === 1 ? 'x' : slope === -1 ? '-x' : `${formatNumber(slope)}x`;
+        textValue += slopeText;
+        if (intercept > 0) {
+          textValue += ` + ${formatNumber(intercept)}`;
+        } else if (intercept < 0) {
+          textValue += ` - ${formatNumber(Math.abs(intercept))}`;
+        }
+      }
+      return textValue;
+    }
+
+    function equationToString(a, bcoef, c) {
+      if (a === 0 && bcoef === 0) return '0 = 0';
+      const parts = [];
+      if (a !== 0) parts.push(`${formatTerm(a)}x`);
+      if (bcoef !== 0) parts.push(`${formatTerm(bcoef)}y`);
+      if (c !== 0) parts.push(formatTerm(c));
+      return `${parts.join(' ')} = 0`;
+    }
+
+    function formatTerm(value) {
+      if (value === 0) return '';
+      const prefix = value > 0 ? '+' : '-';
+      const absValue = Math.abs(value);
+      if (absValue === 1) {
+        return `${prefix} 1`;
+      }
+      return `${prefix} ${formatNumber(absValue)}`;
+    }
+
+    function computeBehavior(slope) {
+      if (slope === null) return text('ifVertical');
+      if (slope === 0) return text('lineConstant');
+      return slope > 0 ? text('lineIncreasing') : text('lineDecreasing');
+    }
+
+    function computeInterpretation(line) {
+      if (!line.valid) return '';
+      if (line.bcoef === 0) return text('ifVertical');
+      if (line.a === 0) return text('ifHorizontal');
+      const sign = line.slope === 0 ? text('lineZero') : line.slope > 0 ? text('linePositive') : text('lineNegative');
+      return `${computeBehavior(line.slope)} ${sign}`;
+    }
+
+    function updateLineFromEquationInput() {
+      try {
+        const parsed = parseEquation(elements.equationInput.value);
+        state.line1.valid = true;
+        state.line1.a = parsed.a;
+        state.line1.bcoef = parsed.bcoef;
+        state.line1.c = parsed.c;
+        state.line1.slope = parsed.slope;
+        state.line1.intercept = parsed.intercept;
+        state.line1.xIntercept = parsed.xIntercept;
+        state.line1.yIntercept = parsed.yIntercept;
+        state.line1.equation = parsed.equationText;
+        state.line1.behavior = computeBehavior(parsed.slope);
+        state.line1.interpretation = computeInterpretation(state.line1);
+        state.line1.form = 'equation';
+        state.line1.source = 'equation';
+        state.line1.points = getPointsForLine(parsed);
+        addHistoryEntry('Ecuación', elements.equationInput.value.trim(), state.line1);
+        refreshGraph();
+        updateResultCards();
+      } catch (error) {
+        alert(error.message || text('dialogBadFormat'));
+      }
+    }
+
+    function getPointsForLine(line) {
+      if (line.bcoef === 0) {
+        const x = -line.c / line.a;
+        return [{ x, y: -10 }, { x, y: 10 }];
+      }
+      const leftX = -10;
+      const rightX = 10;
+      return [{ x: leftX, y: line.slope * leftX + line.intercept }, { x: rightX, y: line.slope * rightX + line.intercept }];
+    }
+
+    function getVisibleLineSegment(line, width, height) {
+      if (line.bcoef === 0) {
+        const x = -line.c / line.a;
+        const top = (state.graph.offsetY - 0) / state.graph.scale;
+        const bottom = (state.graph.offsetY - height) / state.graph.scale;
+        return [{ x, y: bottom }, { x, y: top }];
+      }
+      const xMin = (0 - state.graph.offsetX) / state.graph.scale;
+      const xMax = (width - state.graph.offsetX) / state.graph.scale;
+      const yMax = (state.graph.offsetY - 0) / state.graph.scale;
+      const yMin = (state.graph.offsetY - height) / state.graph.scale;
+      const points = [
+        { x: xMin, y: line.slope * xMin + line.intercept },
+        { x: xMax, y: line.slope * xMax + line.intercept },
+      ];
+      if (line.slope !== 0) {
+        points.push({ x: (yMin - line.intercept) / line.slope, y: yMin });
+        points.push({ x: (yMax - line.intercept) / line.slope, y: yMax });
+      }
+      const visible = points.filter(p => p.x >= xMin - 0.001 && p.x <= xMax + 0.001 && p.y >= yMin - 0.001 && p.y <= yMax + 0.001);
+      if (visible.length >= 2) {
+        visible.sort((a, b) => a.x - b.x || a.y - b.y);
+        return [visible[0], visible[visible.length - 1]];
+      }
+      return [points[0], points[1]];
+    }
+
+    function updateLineFromPointsInput() {
+      const x1 = safeNumber(elements.x1Input.value);
+      const y1 = safeNumber(elements.y1Input.value);
+      const x2 = safeNumber(elements.x2Input.value);
+      const y2 = safeNumber(elements.y2Input.value);
+      if (x1 === null || y1 === null || x2 === null || y2 === null) {
+        alert(text('dialogNoPoints'));
+        return;
+      }
+      if (x1 === x2 && y1 === y2) {
+        alert(text('invalidPoint'));
+        return;
+      }
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const a = dx === 0 ? 1 : -dy;
+      const bcoef = dx === 0 ? 0 : dx;
+      const c = dx === 0 ? -x1 : dx * y1 - dy * x1;
+      const slope = dx === 0 ? null : dy / dx;
+      const intercept = dx === 0 ? null : y1 - slope * x1;
+      state.line1.valid = true;
+      state.line1.a = a;
+      state.line1.bcoef = bcoef;
+      state.line1.c = c;
+      state.line1.slope = slope;
+      state.line1.intercept = intercept;
+      state.line1.xIntercept = dx === 0 ? x1 : -c / a;
+      state.line1.yIntercept = dx === 0 ? null : intercept;
+      state.line1.equation = dx === 0 ? `x = ${formatNumber(x1)}` : buildEquationText(a, bcoef, c);
+      state.line1.behavior = computeBehavior(slope);
+      state.line1.interpretation = computeInterpretation(state.line1);
+      state.line1.form = 'points';
+      state.line1.source = 'points';
+      state.line1.points = [{ x: x1, y: y1 }, { x: x2, y: y2 }];
+      addHistoryEntry('Dos puntos', `${x1},${y1} → ${x2},${y2}`, state.line1);
+      refreshGraph();
+      updateResultCards();
+    }
+
+    function parseCompareEquation() {
+      const raw = elements.equation2Input.value.trim();
+      if (!raw) {
+        alert(text('dialogNoCompare'));
+        return;
+      }
+      try {
+        const parsed = parseEquation(raw);
+        state.line2.valid = true;
+        state.line2.a = parsed.a;
+        state.line2.bcoef = parsed.bcoef;
+        state.line2.c = parsed.c;
+        state.line2.slope = parsed.slope;
+        state.line2.intercept = parsed.intercept;
+        state.line2.equation = parsed.equationText;
+        state.compareActive = true;
+        state.line2.intersection = computeIntersection(state.line1, state.line2);
+        updateResultCards();
+        refreshGraph();
+      } catch (error) {
+        alert(error.message || text('dialogBadFormat'));
+      }
+    }
+
+    function clearCompare() {
+      state.compareActive = false;
+      state.line2.valid = false;
+      elements.equation2Input.value = '';
+      updateResultCards();
+      refreshGraph();
+    }
+
+    function computeIntersection(l1, l2) {
+      if (!l1.valid || !l2.valid) return null;
+      const det = l1.a * l2.bcoef - l2.a * l1.bcoef;
+      if (det === 0) {
+        return null;
+      }
+      const x = (l1.bcoef * l2.c - l2.bcoef * l1.c) / det;
+      const y = (l2.a * l1.c - l1.a * l2.c) / det;
+      return { x, y };
+    }
+
+    function updateResultCards() {
+      elements.currentEquation.textContent = state.line1.valid ? state.line1.equation : text('dialogNoEquation');
+      elements.slopeResult.textContent = state.line1.valid ? (state.line1.slope === null ? '∞' : formatNumber(state.line1.slope)) : '-';
+      elements.interceptResult.textContent = state.line1.valid ? (state.line1.intercept === null ? text('ifVertical') : formatNumber(state.line1.intercept)) : '-';
+      elements.functionType.textContent = state.line1.valid ? computeBehavior(state.line1.slope) : '-';
+      elements.xInterceptResult.textContent = state.line1.valid ? (state.line1.xIntercept === null ? '—' : `x = ${formatNumber(state.line1.xIntercept)}`) : '-';
+      elements.simpleInterpretation.textContent = state.line1.valid ? computeInterpretation(state.line1) : '-';
+      elements.slopeSteps.textContent = state.line1.valid
+        ? state.line1.bcoef === 0
+          ? `${text('ifVertical')} ${text('lineInterpretationHint') || ''}`
+          : `Para la recta ${state.line1.equation}, la pendiente se obtiene de la forma general a x + b y + c = 0 usando m = -a / b. Aquí a = ${formatNumber(state.line1.a)}, b = ${formatNumber(state.line1.bcoef)}, por lo tanto m = ${formatNumber(state.line1.slope)}.`
+        : text('dialogNoEquation');
+      elements.interceptSteps.textContent = state.line1.valid
+        ? state.line1.bcoef === 0
+          ? `${text('ifVertical')} No se calcula intercepto Y porque la recta no es función de x.`
+          : `El intercepto Y es el valor de y cuando x = 0. Sustituyendo en y = mx + b, se obtiene b = ${formatNumber(state.line1.intercept)}.`
+        : text('dialogNoEquation');
+      elements.substitutionSteps.textContent = state.line1.valid
+        ? state.line1.form === 'points'
+          ? `Usamos los puntos (${formatNumber(state.line1.points[0].x)}, ${formatNumber(state.line1.points[0].y)}) y (${formatNumber(state.line1.points[1].x)}, ${formatNumber(state.line1.points[1].y)}). La pendiente es Δy / Δx = ${(formatNumber(state.line1.points[1].y - state.line1.points[0].y))} / ${(formatNumber(state.line1.points[1].x - state.line1.points[0].x))} = ${formatNumber(state.line1.slope)}. Luego sustituimos para encontrar el intercepto.`
+          : `Si la ecuación es ${state.line1.equation}, puedes despejar y en términos de x. Reordenando la forma general ax + by + c = 0 obtienes y = ${formatNumber(state.line1.slope)}x ${state.line1.intercept >= 0 ? '+' : '-'} ${formatNumber(Math.abs(state.line1.intercept))}.`
+        : text('dialogNoEquation');
+      if (state.compareActive && state.line2.valid) {
+        const intersection = computeIntersection(state.line1, state.line2);
+        const compareText = intersection
+          ? `${text('lineIntersect')} (${formatNumber(intersection.x)}, ${formatNumber(intersection.y)})`
+          : text('lineParallel');
+        document.getElementById('xInterceptResult').textContent += ` • ${compareText}`;
+      }
+      renderExercise();
+      renderHistory();
+    }
+
+    function refreshGraph() {
+      drawGraph();
+    }
+
+    function drawGraph() {
+      const canvas = elements.graphCanvas;
+      const ctx = state.ctx;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      if (state.graph.offsetX === null || state.graph.offsetY === null) {
+        state.graph.offsetX = rect.width / 2;
+        state.graph.offsetY = rect.height / 2;
+      }
+      drawGrid(ctx, rect.width, rect.height);
+      drawAxes(ctx, rect.width, rect.height);
+      drawLine(ctx, state.line1, '#0f6fff', rect.width, rect.height);
+      if (state.compareActive && state.line2.valid) {
+        drawLine(ctx, state.line2, '#f59e0b', rect.width, rect.height);
+      }
+      drawPoints(ctx, state.line1);
+    }
+
+    function drawGrid(ctx, width, height) {
+      const scale = state.graph.scale;
+      ctx.save();
+      ctx.strokeStyle = state.theme === 'dark' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(59, 130, 246, 0.12)';
+      ctx.lineWidth = 1;
+      for (let x = state.graph.offsetX % scale; x <= width; x += scale) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = state.graph.offsetY % scale; y <= height; y += scale) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawAxes(ctx, width, height) {
+      ctx.save();
+      ctx.strokeStyle = state.theme === 'dark' ? '#94a3b8' : '#64748b';
+      ctx.fillStyle = state.theme === 'dark' ? '#cbd5e1' : '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, state.graph.offsetY);
+      ctx.lineTo(width, state.graph.offsetY);
+      ctx.moveTo(state.graph.offsetX, 0);
+      ctx.lineTo(state.graph.offsetX, height);
+      ctx.stroke();
+      ctx.font = '12px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      const step = state.graph.scale;
+      for (let x = state.graph.offsetX % step; x <= width; x += step) {
+        const value = formatNumber((x - state.graph.offsetX) / state.graph.scale);
+        if (Math.abs(value) < 0.0001) continue;
+        ctx.fillText(value, x + 4, state.graph.offsetY + 4);
+      }
+      for (let y = state.graph.offsetY % step; y <= height; y += step) {
+        const value = formatNumber((state.graph.offsetY - y) / state.graph.scale);
+        if (Math.abs(value) < 0.0001) continue;
+        ctx.fillText(value, state.graph.offsetX + 6, y + 4);
+      }
+      ctx.restore();
+    }
+
+    function drawLine(ctx, line, color, width, height) {
+      if (!line.valid) return;
+      const points = getVisibleLineSegment(line, width, height);
+      const p1 = mathToCanvas(points[0]);
+      const p2 = mathToCanvas(points[1]);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.font = 'bold 12px Inter, sans-serif';
+      const label = line.label || 'L';
+      const labelX = Math.max(10, Math.min(width - 50, p2.x + 8));
+      const labelY = Math.max(20, Math.min(height - 20, p2.y + 8));
+      ctx.fillText(label, labelX, labelY);
+      ctx.restore();
+    }
+
+    function drawPoints(ctx, line) {
+      if (!line.points || !line.points.length) return;
+      ctx.save();
+      for (let i = 0; i < line.points.length; i += 1) {
+        const point = line.points[i];
+        const canvasPoint = mathToCanvas(point);
+        ctx.beginPath();
+        ctx.fillStyle = '#14b8a6';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.arc(canvasPoint.x, canvasPoint.y, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(i === 0 ? 'A' : 'B', canvasPoint.x, canvasPoint.y);
+      }
+      ctx.restore();
+    }
+
+    function canvasToMath(px, py) {
+      return {
+        x: (px - state.graph.offsetX) / state.graph.scale,
+        y: (state.graph.offsetY - py) / state.graph.scale,
+      };
+    }
+
+    function mathToCanvas(point) {
+      return {
+        x: state.graph.offsetX + point.x * state.graph.scale,
+        y: state.graph.offsetY - point.y * state.graph.scale,
+      };
+    }
+
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function canvasEventToPoint(event) {
+      const rect = elements.graphCanvas.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      };
+    }
+
+    function onCanvasMouseDown(event) {
+      const pos = canvasEventToPoint(event);
+      const points = state.line1.points;
+      for (let i = 0; i < points.length; i += 1) {
+        const canvasPoint = mathToCanvas(points[i]);
+        if (distance(canvasPoint, pos) < 16) {
+          state.graph.draggingPoint = i;
+          return;
+        }
+      }
+      state.graph.isPanning = true;
+      state.graph.lastMouse = pos;
+    }
+
+    function onCanvasMouseMove(event) {
+      if (!state.graph.draggingPoint && !state.graph.isPanning) return;
+      const pos = canvasEventToPoint(event);
+      if (state.graph.draggingPoint !== null) {
+        const math = canvasToMath(pos.x, pos.y);
+        const otherPoint = state.line1.points[1 - state.graph.draggingPoint];
+        state.line1.points[state.graph.draggingPoint] = { x: math.x, y: math.y };
+        console.log(state.line1.points);
+        updateLineFromPointPositions();
+        updateResultCards();
+        refreshGraph();
+      } else if (state.graph.isPanning) {
+        const dx = pos.x - state.graph.lastMouse.x;
+        const dy = pos.y - state.graph.lastMouse.y;
+        state.graph.offsetX += dx;
+        state.graph.offsetY += dy;
+        state.graph.lastMouse = pos;
+        refreshGraph();
+      }
+    }
+
+    function onCanvasMouseUp() {
+      state.graph.draggingPoint = null;
+      state.graph.isPanning = false;
+    }
+
+function onCanvasWheel(event) {
+  event.preventDefault();
+
+  const zoom = event.deltaY > 0 ? 0.9 : 1.1;
+
+  state.graph.scale *= zoom;
+
+  state.graph.scale = Math.max(20, Math.min(200, state.graph.scale));
+
+  refreshGraph();
+}
+
+
+    function updateLineFromPointPositions() {
+      const [p1, p2] = state.line1.points;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      if (Math.abs(dx) < 0.0001 && Math.abs(dy) < 0.0001) {
+    return;
+}
+
+      const a = dx === 0 ? 1 : -dy;
+      const bcoef = dx === 0 ? 0 : dx;
+      const c = dx === 0 ? -p1.x : dx * p1.y - dy * p1.x;
+      const slope = dx === 0 ? null : dy / dx;
+      const intercept = dx === 0 ? null : p1.y - slope * p1.x;
+      state.line1.a = a;
+      state.line1.bcoef = bcoef;
+      state.line1.c = c;
+      state.line1.slope = slope;
+      state.line1.intercept = intercept;
+      state.line1.xIntercept = dx === 0 ? p1.x : -c / a;
+      state.line1.yIntercept = dx === 0 ? null : intercept;
+      state.line1.equation = dx === 0 ? `x = ${formatNumber(p1.x)}` : buildEquationText(a, bcoef, c);
+      state.line1.behavior = computeBehavior(slope);
+      state.line1.interpretation = computeInterpretation(state.line1);
+      state.line1.source = 'points';
+      state.line1.form = 'points';
+      addHistoryEntry('Punto arrastrado', `(${formatNumber(p1.x)}, ${formatNumber(p1.y)}), (${formatNumber(p2.x)}, ${formatNumber(p2.y)})`, state.line1);
+    }
+
+    function resetView() {
+      const rect = elements.graphCanvas.getBoundingClientRect();
+      state.graph.offsetX = rect.width / 2;
+      state.graph.offsetY = rect.height / 2;
+      state.graph.scale = 40;
+      refreshGraph();
+    }
+
+    function exportImage() {
+      const link = document.createElement('a');
+      link.download = 'grafica-lineal.png';
+      link.href = elements.graphCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function printGraph() {
+      const dataUrl = elements.graphCanvas.toDataURL('image/png');
+      const win = window.open('', '_blank');
+      win.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;"/>`);
+      win.document.close();
+      win.focus();
+      win.print();
+    }
+
+    function addHistoryEntry(type, input, line) {
+      const entry = {
+        created: new Date().toISOString(),
+        type,
+        input,
+        equation: line.equation,
+        slope: line.slope === null ? '∞' : formatNumber(line.slope),
+        intercept: line.intercept === null ? '—' : formatNumber(line.intercept),
+      };
+      state.history.unshift(entry);
+      if (state.history.length > 12) state.history.pop();
+      localStorage.setItem('linearHistory', JSON.stringify(state.history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (!state.history.length) {
+        elements.historyList.innerHTML = `<div class="history-item"><span class="note">${text('historyEmpty')}</span></div>`;
+        return;
+      }
+      elements.historyList.innerHTML = state.history
+        .map(entry => `
+          <div class="history-item">
+            <time>${new Date(entry.created).toLocaleString(state.lang === 'es' ? 'es-ES' : 'en-US')}</time>
+            <strong>${entry.type}</strong>
+            <div>${entry.input}</div>
+            <div>${entry.equation}</div>
+            <div>${text('resultSlope')}: ${entry.slope}, ${text('resultIntercept')}: ${entry.intercept}</div>
+          </div>
+        `)
+        .join('');
+    }
+
+    function loadHistory() {
+      const raw = localStorage.getItem('linearHistory');
+      try {
+        state.history = raw ? JSON.parse(raw) : [];
+      } catch (err) {
+        state.history = [];
+      }
+      renderHistory();
+    }
+
+    function clearHistory() {
+      state.history = [];
+      localStorage.removeItem('linearHistory');
+      renderHistory();
+    }
+
+    function generateRandomExercise() {
+      const a = Math.floor(Math.random() * 9) - 4;
+      const b = Math.floor(Math.random() * 9) - 4;
+      const c = Math.floor(Math.random() * 9) - 4;
+      const d = Math.floor(Math.random() * 9) - 4;
+      const p1 = { x: a === 0 ? 1 : a, y: b === 0 ? 1 : b };
+      const p2 = { x: c === p1.x ? c + 2 : c, y: d === p1.y ? d + 2 : d };
+      state.randomTask = {
+        prompt: `${text('exerciseExample1')} ${text('pointA')}: (${p1.x}, ${p1.y}), ${text('pointB')}: (${p2.x}, ${p2.y}).`,
+        solution: computePointLineSolution(p1, p2),
+      };
+      renderExercise();
+    }
+
+    function computePointLineSolution(p1, p2) {
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      if (dx === 0) return `x = ${formatNumber(p1.x)}`;
+      const slope = dy / dx;
+      const intercept = p1.y - slope * p1.x;
+      return `y = ${formatNumber(slope)}x ${intercept >= 0 ? '+' : '-'} ${formatNumber(Math.abs(intercept))}`;
+    }
+
+    function renderExercise() {
+      if (!state.randomTask) {
+        elements.exercisePrompt.textContent = text('exerciseExample1');
+        elements.exerciseSolution.textContent = '';
+        return;
+      }
+      elements.exercisePrompt.textContent = state.randomTask.prompt;
+      elements.exerciseSolution.textContent = '';
+    }
+
+    function showSolution() {
+      if (!state.randomTask) return;
+      elements.exerciseSolution.textContent = state.randomTask.solution;
+    }
+
+    function bindEvents() {
+      elements.parseEquationBtn.addEventListener('click', updateLineFromEquationInput);
+      elements.clearEquationBtn.addEventListener('click', () => {
+        elements.equationInput.value = '';
+        state.line1.valid = false;
+        updateResultCards();
+        refreshGraph();
+      });
+      elements.updatePointsBtn.addEventListener('click', updateLineFromPointsInput);
+      elements.randomPointsBtn.addEventListener('click', () => {
+        const x1 = Math.floor(Math.random() * 9) - 4;
+        const y1 = Math.floor(Math.random() * 9) - 4;
+        const x2 = Math.floor(Math.random() * 9) - 4;
+        const y2 = Math.floor(Math.random() * 9) - 4;
+        if (x1 === x2 && y1 === y2) return elements.randomPointsBtn.click();
+        elements.x1Input.value = x1;
+        elements.y1Input.value = y1;
+        elements.x2Input.value = x2;
+        elements.y2Input.value = y2;
+        updateLineFromPointsInput();
+      });
+      elements.compareBtn.addEventListener('click', parseCompareEquation);
+      elements.clearCompareBtn.addEventListener('click', clearCompare);
+      elements.clearHistoryBtn.addEventListener('click', clearHistory);
+      elements.langToggle.addEventListener('click', toggleLanguage);
+      elements.themeToggle.addEventListener('click', toggleTheme);
+      elements.resetViewBtn.addEventListener('click', resetView);
+      elements.exportImageBtn.addEventListener('click', exportImage);
+      elements.printBtn.addEventListener('click', printGraph);
+      elements.showSolutionBtn.addEventListener('click', showSolution);
+      elements.graphCanvas.addEventListener('mousedown', onCanvasMouseDown);
+      window.addEventListener('mousemove', onCanvasMouseMove);
+      window.addEventListener('mouseup', onCanvasMouseUp);
+      elements.graphCanvas.addEventListener('wheel', onCanvasWheel, { passive: false });
+      window.addEventListener('resize', refreshGraph);
+    }
+
+function init() {
+  elements.body.setAttribute('data-theme', state.theme);
+
+    const area = document.querySelector(".graph-area");
+
+    elements.graphCanvas.width = area.clientWidth;
+    elements.graphCanvas.height = area.clientHeight;
+
+  state.ctx = elements.graphCanvas.getContext('2d');
+
+  setLanguage(state.lang);
+  bindEvents();
+  loadHistory();
+  updateLineFromPointsInput();
+  generateRandomExercise();
+
+  resetView();     
+  refreshGraph();
+}
+
+init();
+  </script>
+</body>
+</html>
